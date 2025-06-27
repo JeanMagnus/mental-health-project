@@ -29,7 +29,7 @@ st.markdown("### Resultados para a Seleção Atual")
 
 # Calcula as contagens com base nos dados filtrados
 total_participantes = df_filtrado.shape[0]
-counts_genero = df_filtrado['Gender_clean'].value_counts()
+counts_genero = df_filtrado['gender_group'].value_counts()
 homens = counts_genero.get('Homem', 0)
 mulheres = counts_genero.get('Mulher', 0)
 outros = counts_genero.get('Outro/Prefiro não dizer', 0)
