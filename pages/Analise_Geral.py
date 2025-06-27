@@ -44,10 +44,8 @@ kpi2.metric("Mulheres", mulheres)
 kpi3.metric("Homens", homens)
 kpi4.metric("Outros Gêneros", outros)
 
-=======
 # --- LAYOUT PRINCIPAL ---
 st.markdown(f"**Mostrando resultados para {df_filtrado.shape[0]} participantes.**")
->>>>>>> 35390f4 (problem solved ✅)
 st.markdown("---")
 
 col1, col2 = st.columns(2)
