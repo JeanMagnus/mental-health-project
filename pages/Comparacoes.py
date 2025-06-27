@@ -179,11 +179,7 @@ elif aba == "Medo de Consequências por Gênero":
 # --- NOVO BLOCO ELIF PARA O GRÁFICO DE RADAR COM LÓGICA ISOLADA ---
 elif aba == "Percepção de Apoio por Gênero (Radar)":
     st.header("Comparativo: Percepção de Apoio à Saúde Mental por Gênero")
-    st.write(
-        "Esta análise agrupa os gêneros 'Trans' e 'Não-binárie' na categoria 'Trans/NB' "
-        "apenas para esta visualização."
-    )
-
+    
     # Lógica de classificação de gênero EXCLUSIVA para este gráfico
     male_terms = ['male', 'm', 'man', 'cis male', 'cis man', 'male (cis)', 'make', 'mail', 'malr', 'msle', 'maile', 'cis male']
     female_terms = ['female', 'f', 'woman', 'cis female', 'cis-female/femme', 'femake', 'cis woman', 'femail']
