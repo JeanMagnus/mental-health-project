@@ -15,6 +15,13 @@ except ImportError:
 # 1. Aplica os estilos de CSS (se houver)
 aplicar_estilos()
 
+if 'df' not in st.session_state:
+    # Chama a função importada do seu arquivo utils.py
+    df = load_data()
+    # Salva o DataFrame no estado da sessão
+    st.session_state['df'] = df
+    print("Dados carregados e salvos na sessão pela primeira vez.")
+
 # 2. DEFINA A FUNÇÃO DA PÁGINA INICIAL PRIMEIRO
 def pagina_inicial():
     """

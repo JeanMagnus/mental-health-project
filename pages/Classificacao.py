@@ -6,6 +6,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from imblearn.over_sampling import SMOTE
 
+
 # --- LÓGICA EM SEGUNDO PLANO ---
 # Função para treinar o modelo e deixá-lo pronto para uso.
 # O cache garante que isso rode apenas uma vez por sessão.
