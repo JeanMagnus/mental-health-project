@@ -3,5 +3,5 @@ pandas
 numpy
 plotly
 scipy
-scikit-learn==1.5.0
-imbalanced-learn==0.12.3
+scikit-learn
+imbalanced-learn=
