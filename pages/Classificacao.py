@@ -26,15 +26,23 @@ def treinar_modelo():
     df_ml[target] = df_ml[target].map({'Yes': 1, 'No': 0})
     X = df_ml[features]
     y = df_ml[target]
+
+    # Garante consistência nas colunas de dummies
+    categorias_dummies = pd.get_dummies(pd.DataFrame({
+        'family_history': ['No', 'Yes'],
+        'work_interfere': ['Never', 'Sometimes', 'Often', 'Rarely'],
+        'benefits': ['No', "Don't know", 'Yes'],
+        'Gender_clean': ['Female', 'Male', 'Other'],
+        'Age': [0]  # numérico, não gera dummy
+    }), drop_first=True).columns
+
     X_encoded = pd.get_dummies(X, drop_first=True)
+    X_encoded = X_encoded.reindex(columns=categorias_dummies, fill_value=0).astype(float)
 
-    # Forçando tipo numérico compatível com SMOTE
-    X_encoded = X_encoded.astype(float)
-
-    # Ajustando o k_neighbors dinamicamente
+    # Ajuste dinâmico do k_neighbors
     minority_class_count = min(y.value_counts())
     k_neighbors = max(1, min(5, minority_class_count - 1))
-    print(f"Usando SMOTE com k_neighbors={k_neighbors} (mínimo de {minority_class_count} amostras na menor classe)")
+    print(f"SMOTE com k_neighbors={k_neighbors} (menor classe tem {minority_class_count} amostras)")
 
     smote = SMOTE(random_state=42, k_neighbors=k_neighbors)
     X_train_resampled, y_train_resampled = smote.fit_resample(X_encoded, y)
@@ -42,7 +50,7 @@ def treinar_modelo():
     model = RandomForestClassifier(random_state=42)
     model.fit(X_train_resampled, y_train_resampled)
     print("Modelo treinado e colocado em cache!")
-    return model, X_encoded.columns
+    return model, categorias_dummies
 
 modelo, colunas_modelo = treinar_modelo()
 
@@ -69,9 +77,8 @@ if submit_button:
     }
     usuario_df = pd.DataFrame(dados_usuario)
     usuario_encoded = pd.get_dummies(usuario_df, drop_first=True)
-    usuario_encoded = usuario_encoded.astype(float)
-    usuario_final = usuario_encoded.reindex(columns=colunas_modelo, fill_value=0)
-    probabilidade = modelo.predict_proba(usuario_final)
+    usuario_encoded = usuario_encoded.reindex(columns=colunas_modelo, fill_value=0).astype(float)
+    probabilidade = modelo.predict_proba(usuario_encoded)
     prob_sim = probabilidade[0][1]
 
     st.header("Resultado da Análise")
