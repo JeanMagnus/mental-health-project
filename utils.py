@@ -55,3 +55,29 @@ def load_data():
 
     return df
     
+
+# FUNÇÃO CENTRALIZADA PARA TODOS OS ESTILOS VISUAIS (VERSÃO ATUALIZADA)
+def aplicar_estilos():
+    st.markdown(
+        """
+        <style>
+        
+        /* Largura da sidebar */
+        [data-testid="stSidebar"] {
+            width: 450px !important; /* <-- Ajuste a LARGURA aqui */
+        }
+
+        /* NOVO: Seletor universal para TODO o texto na sidebar */
+        [data-testid="stSidebar"] * {
+            font-size: 1.7rem !important; /* <-- Ajuste o TAMANHO DA FONTE aqui */
+        }
+
+        * NOVO: Espaçamento entre o ícone e o texto no menu da sidebar */
+        [data-testid="stSidebarNav"] a span:first-child {
+            margin-right: 900px; /* <-- Ajuste este valor conforme necessário */
+        }
+
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
