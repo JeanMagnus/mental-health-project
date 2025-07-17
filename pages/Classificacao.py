@@ -1,102 +1,164 @@
+
 import streamlit as st
 import pandas as pd
+from utils import load_data
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
-from imblearn.over_sampling import SMOTE
-import warnings
+from sklearn.metrics import accuracy_score, precision_score, recall_score, ConfusionMatrixDisplay
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.impute import SimpleImputer
+import numpy as np
+import matplotlib.pyplot as plt
 
-warnings.filterwarnings("ignore", category=FutureWarning)
+st.set_page_config(layout="wide")
+st.title("Análise de Perfil de Saúde Mental")
+st.markdown("""
+Esta ferramenta usa **Inteligência Artificial** para analisar um perfil e determinar se ele é consistente com o de outras pessoas que, historicamente, buscaram tratamento para saúde mental. 
+O objetivo é oferecer um **ponto de partida** para a reflexão sobre a necessidade de buscar ajuda profissional.
+""")
+
+
+@st.cache_data
+def prepare_data():
+    df = load_data()
+    
+    features = [
+        'age', 'gender_group', 'family_history', 'benefits', 'care_options', 
+        'anonymity', 'leave', 'work_interfere'
+    ]
+    target = 'treatment'
+    
+    df_model = df[features + [target]].copy()
+
+    df_model['work_interfere'] = df_model['work_interfere'].fillna('Não sabe')
+    df_model = df_model[(df_model['age'] >= 15) & (df_model['age'] <= 80)]
+    
+    df_model[target] = df_model[target].map({'Yes': 1, 'No': 0})
+    df_model = df_model.dropna(subset=[target])
+    df_model[target] = df_model[target].astype(int)
+
+    X = df_model[features]
+    y = df_model[target]
+    
+    return X, y
+
+X, y = prepare_data()
+
 
 @st.cache_resource
-def treinar_modelo():
-    print("Iniciando o treinamento do modelo (isso só acontecerá uma vez)...")
-    data = {
-        'Age': [37, 44, 32, 31, 33, 35, 39, 42, 23, 29] * 80,
-        'family_history': ['No', 'Yes', 'No', 'Yes', 'No', 'Yes', 'No', 'Yes', 'No', 'No'] * 80,
-        'work_interfere': ['Often', 'Rarely', 'Rarely', 'Often', 'Sometimes', 'Sometimes', 'Never', 'Sometimes', 'Never', 'Never'] * 80,
-        'benefits': ['Yes', 'No', 'No', 'No', 'Yes', 'Yes', 'No', 'No', 'Yes', 'Yes'] * 80,
-        'Gender_clean': ['Female', 'Male', 'Male', 'Male', 'Male', 'Female', 'Female', 'Female', 'Male', 'Female'] * 80,
-        'treatment': ['Yes', 'No', 'No', 'Yes', 'No', 'Yes', 'No', 'No', 'Yes', 'No'] * 80,
-    }
-    df = pd.DataFrame(data)
+def train_model(X, y):
+    categorical_features = X.select_dtypes(include=['object', 'category']).columns
+    numerical_features = X.select_dtypes(include=np.number).columns
 
-    features = ['Age', 'family_history', 'work_interfere', 'benefits', 'Gender_clean']
-    target = 'treatment'
-    df_ml = df.dropna(subset=features + [target]).copy()
-    df_ml[target] = df_ml[target].map({'Yes': 1, 'No': 0})
-    X = df_ml[features]
-    y = df_ml[target]
+    numerical_transformer = SimpleImputer(strategy='median')
+    categorical_transformer = Pipeline(steps=[
+        ('imputer', SimpleImputer(strategy='most_frequent')),
+        ('onehot', OneHotEncoder(handle_unknown='ignore'))
+    ])
 
-    # Garante consistência nas colunas de dummies
-    categorias_dummies = pd.get_dummies(pd.DataFrame({
-        'family_history': ['No', 'Yes'],
-        'work_interfere': ['Never', 'Sometimes', 'Often', 'Rarely'],
-        'benefits': ['No', "Don't know", 'Yes'],
-        'Gender_clean': ['Female', 'Male', 'Other'],
-        'Age': [0]  # numérico, não gera dummy
-    }), drop_first=True).columns
+    preprocessor = ColumnTransformer(
+        transformers=[
+            ('num', numerical_transformer, numerical_features),
+            ('cat', categorical_transformer, categorical_features)
+        ])
 
-    X_encoded = pd.get_dummies(X, drop_first=True)
-    X_encoded = X_encoded.reindex(columns=categorias_dummies, fill_value=0).astype(float)
+    model_pipeline = Pipeline(steps=[('preprocessor', preprocessor),
+                                     ('classifier', RandomForestClassifier(random_state=42, n_estimators=100))])
+    
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+    
+    model_pipeline.fit(X_train, y_train)
+    
+    return model_pipeline, X_test, y_test
 
-    # Ajuste dinâmico do k_neighbors
-    minority_class_count = min(y.value_counts())
-    k_neighbors = max(1, min(5, minority_class_count - 1))
-    print(f"SMOTE com k_neighbors={k_neighbors} (menor classe tem {minority_class_count} amostras)")
 
-    smote = SMOTE(random_state=42, k_neighbors=k_neighbors)
-    X_train_resampled, y_train_resampled = smote.fit_resample(X_encoded, y)
+model, X_test, y_test = train_model(X, y)
 
-    model = RandomForestClassifier(random_state=42)
-    model.fit(X_train_resampled, y_train_resampled)
-    print("Modelo treinado e colocado em cache!")
-    return model, categorias_dummies
 
-modelo, colunas_modelo = treinar_modelo()
+st.header("Recomendação Personalizada")
+st.markdown("Preencha os campos abaixo para que a IA analise o perfil e sugira se a busca por ajuda profissional pode ser benéfica.")
 
-st.set_page_config(page_title="Previsão de Saúde Mental", page_icon="🧠", layout="centered")
-st.title("🧠 Formulário de Previsão de Saúde Mental")
-st.markdown("Preencha os dados abaixo para que o modelo de Machine Learning faça uma previsão.")
+opcoes_pt = {
+    'sim_nao': ['Não', 'Sim'],
+    'sim_nao_naosei': ['Não', 'Sim', 'Não sei'],
+    'opcoes_cuidado': ['Não', 'Sim', 'Não tenho certeza'],
+    'facilidade_licenca': ['Um pouco fácil', 'Muito fácil', 'Não sei', 'Um pouco difícil', 'Muito difícil'],
+    'interferencia_trabalho': ['Nunca', 'Raramente', 'Às vezes', 'Frequentemente', 'Não sabe']
+}
+
+mapa_pt_para_en = {
+    'Não': 'No', 'Sim': 'Yes', 'Não sei': "Don't know", 'Não tenho certeza': 'Not sure',
+    'Um pouco fácil': 'Somewhat easy', 'Muito fácil': 'Very easy', 'Um pouco difícil': 'Somewhat difficult',
+    'Muito difícil': 'Very difficult', 'Nunca': 'Never', 'Raramente': 'Rarely',
+    'Às vezes': 'Sometimes', 'Frequentemente': 'Often'
+}
 
 with st.form("prediction_form"):
-    st.header("Informações do Usuário")
-    age_input = st.slider("Idade", min_value=18, max_value=100, value=30, step=1)
-    family_history_input = st.radio("Você tem histórico familiar de doença mental?", ("No", "Yes"), index=0)
-    work_interfere_input = st.selectbox("Você sente que sua condição de saúde mental interfere no seu trabalho?", ("Never", "Sometimes", "Often", "Rarely"))
-    benefits_input = st.select_slider("Sua empresa oferece benefícios de saúde mental?", options=["No", "Don't know", "Yes"])
-    gender_input = st.radio("Gênero", ("Female", "Male", "Other"), index=0)
-    submit_button = st.form_submit_button("Fazer Previsão")
+    st.subheader("Insira as características do perfil:")
+    col1, col2 = st.columns(2)
+    with col1:
+        age = st.slider("Idade:", 15, 80, 30)
+        gender_group = st.selectbox("Gênero:", options=X['gender_group'].unique())
+        family_history_pt = st.selectbox("Possui histórico familiar de doença mental?", options=opcoes_pt['sim_nao'])
+        benefits_pt = st.selectbox("A empresa oferece benefícios de saúde mental?", options=opcoes_pt['sim_nao_naosei'])
+    with col2:
+        care_options_pt = st.selectbox("Conhece as opções de cuidado mental da empresa?", options=opcoes_pt['opcoes_cuidado'])
+        anonymity_pt = st.selectbox("A empresa garante anonimato?", options=opcoes_pt['sim_nao_naosei'])
+        leave_pt = st.selectbox("Qual a facilidade de tirar uma licença por saúde mental?", options=opcoes_pt['facilidade_licenca'])
+        work_interfere_pt = st.selectbox("Sua condição de saúde mental interfere no trabalho?", options=opcoes_pt['interferencia_trabalho'])
+
+    submit_button = st.form_submit_button(label="Analisar Perfil")
 
 if submit_button:
-    dados_usuario = {
-        'Age': [age_input],
-        'family_history': [family_history_input],
-        'work_interfere': [work_interfere_input],
-        'benefits': [benefits_input],
-        'Gender_clean': [gender_input]
-    }
-    usuario_df = pd.DataFrame(dados_usuario)
-    usuario_encoded = pd.get_dummies(usuario_df, drop_first=True)
-    usuario_encoded = usuario_encoded.reindex(columns=colunas_modelo, fill_value=0).astype(float)
-    probabilidade = modelo.predict_proba(usuario_encoded)
-    prob_sim = probabilidade[0][1]
+    family_history_en = mapa_pt_para_en[family_history_pt]
+    benefits_en = mapa_pt_para_en[benefits_pt]
+    care_options_en = mapa_pt_para_en[care_options_pt]
+    anonymity_en = mapa_pt_para_en[anonymity_pt]
+    leave_en = mapa_pt_para_en[leave_pt]
+    work_interfere_en = mapa_pt_para_en[work_interfere_pt]
 
-    st.header("Resultado da Análise")
-    if prob_sim > 0.5:
-        st.success(
-            f"O modelo prevê uma probabilidade de **{prob_sim:.0%}** de que uma pessoa com este perfil "
-            f"busque tratamento para saúde mental.",
-            icon="✅"
-        )
-        st.balloons()
+    input_data = pd.DataFrame({
+        'age': [age], 'gender_group': [gender_group], 'family_history': [family_history_en],
+        'benefits': [benefits_en], 'care_options': [care_options_en], 'anonymity': [anonymity_en],
+        'leave': [leave_en], 'work_interfere': [work_interfere_en]
+    })
+    
+    prediction_proba = model.predict_proba(input_data)[0]
+    probability_yes = prediction_proba[1]
+
+    st.subheader("Resultado da Análise")
+    if probability_yes > 0.5:
+        st.success(f"**Recomendação:** O perfil analisado é **consistente ({probability_yes:.1%})** com o de pessoas que buscaram ajuda. Considerar o apoio de um profissional de saúde mental pode ser um passo positivo.")
     else:
-        st.info(
-            f"O modelo prevê uma probabilidade de **{prob_sim:.0%}** de que uma pessoa com este perfil "
-            f"busque tratamento para saúde mental.",
-            icon="❌"
-        )
-    st.warning(
-        "**Observação:** Este é um resultado gerado por um modelo estatístico e não substitui "
-        "uma avaliação profissional de saúde.",
-        icon="⚠️"
-    )
+        st.warning(f"**Atenção:** Embora o perfil **não se alinhe ({probability_yes:.1%})** aos padrões mais comuns de quem busca ajuda, a saúde mental é uma jornada individual. É sempre válido buscar apoio se sentir necessidade.")
+    st.progress(probability_yes)
+    st.caption("Esta ferramenta é um auxílio de conscientização e não substitui o diagnóstico de um profissional qualificado.")
+
+
+with st.expander("Ver detalhes técnicos e desempenho do modelo"):
+    st.header("Avaliação de Desempenho do Modelo")
+
+    y_pred = model.predict(X_test)
+    accuracy = accuracy_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred)
+    recall = recall_score(y_test, y_pred)
+
+    kpi1, kpi2, kpi3 = st.columns(3)
+    kpi1.metric("Acurácia", f"{accuracy:.2%}")
+    kpi2.metric("Precisão", f"{precision:.2%}")
+    kpi3.metric("Recall", f"{recall:.2%}")
+
+    st.markdown("""
+    - **Acurácia:** Percentual de previsões corretas que o modelo fez.
+    - **Precisão:** Dos perfis que o modelo sinalizou como "positivos", quantos eram de fato.
+    - **Recall:** De todos os perfis "positivos" que existem, quantos o modelo conseguiu encontrar.
+    """)
+
+    st.subheader("Matriz de Confusão")
+    st.write("A matriz de confusão nos ajuda a ver os acertos e erros do modelo em detalhes.")
+    
+    fig, ax = plt.subplots()
+    ConfusionMatrixDisplay.from_estimator(model, X_test, y_test, ax=ax, cmap='Blues', display_labels=['Perfil Negativo', 'Perfil Positivo'])
+    st.pyplot(fig)
