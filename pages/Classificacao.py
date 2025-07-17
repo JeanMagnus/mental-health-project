@@ -28,12 +28,14 @@ def treinar_modelo():
     y = df_ml[target]
     X_encoded = pd.get_dummies(X, drop_first=True)
 
-    # =========================
-    # ADIÇÃO DA SOLUÇÃO 2
-    # =========================
+    # Forçando tipo numérico compatível com SMOTE
+    X_encoded = X_encoded.astype(float)
+
+    # Ajustando o k_neighbors dinamicamente
     minority_class_count = min(y.value_counts())
     k_neighbors = max(1, min(5, minority_class_count - 1))
     print(f"Usando SMOTE com k_neighbors={k_neighbors} (mínimo de {minority_class_count} amostras na menor classe)")
+
     smote = SMOTE(random_state=42, k_neighbors=k_neighbors)
     X_train_resampled, y_train_resampled = smote.fit_resample(X_encoded, y)
 
@@ -67,6 +69,7 @@ if submit_button:
     }
     usuario_df = pd.DataFrame(dados_usuario)
     usuario_encoded = pd.get_dummies(usuario_df, drop_first=True)
+    usuario_encoded = usuario_encoded.astype(float)
     usuario_final = usuario_encoded.reindex(columns=colunas_modelo, fill_value=0)
     probabilidade = modelo.predict_proba(usuario_final)
     prob_sim = probabilidade[0][1]
