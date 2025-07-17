@@ -62,6 +62,7 @@ pages = [
     st.Page("pages/Comparacoes.py", title="Comparações", icon=":material/compare_arrows:"),
     st.Page("pages/Correlacoes.py", title="Correlações", icon=":material/hub:"),
     st.Page("pages/Classificacao.py", title="Classificação", icon=":material/person:"),
+    st.Page("pages/Clustering.py", title="Perfis", icon=":material/groups:"),
 ]
 
 with st.sidebar.container(height=350):
