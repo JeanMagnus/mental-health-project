@@ -68,14 +68,14 @@ def aplicar_estilos():
            O padrão do navegador é 16px. Experimente 17px ou 18px.
         */
         html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
-            font-size: 20px;
+            font-size: 19px;
         }
 
         /* --- BARRA LATERAL (SIDEBAR) --- */
         
         /* Opcional: Deixar a fonte da sidebar um pouco maior que o conteúdo principal */
         [data-testid="stSidebar"] * {
-            font-size: 1.3rem; /* 1.1rem = 110% do tamanho da fonte base (17px) */
+            font-size: 1.1rem; /* 1.1rem = 110% do tamanho da fonte base (17px) */
         }
 
         /* Espaçamento entre o ícone e o texto no menu */
