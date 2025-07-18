@@ -62,19 +62,25 @@ def aplicar_estilos():
         """
         <style>
         
-        /* Largura da sidebar */
-        [data-testid="stSidebar"] {
-            width: 450px !important; /* <-- Ajuste a LARGURA aqui */
+        /* --- TIPOGRAFIA GERAL --- */
+
+        /* Define um tamanho de fonte base maior para o app todo. 
+           O padrão do navegador é 16px. Experimente 17px ou 18px.
+        */
+        html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
+            font-size: 20px;
         }
 
-        /* NOVO: Seletor universal para TODO o texto na sidebar */
+        /* --- BARRA LATERAL (SIDEBAR) --- */
+        
+        /* Opcional: Deixar a fonte da sidebar um pouco maior que o conteúdo principal */
         [data-testid="stSidebar"] * {
-            font-size: 1.7rem !important; /* <-- Ajuste o TAMANHO DA FONTE aqui */
+            font-size: 1.3rem; /* 1.1rem = 110% do tamanho da fonte base (17px) */
         }
 
-        * NOVO: Espaçamento entre o ícone e o texto no menu da sidebar */
-        [data-testid="stSidebarNav"] a span:first-child {
-            margin-right: 900px; /* <-- Ajuste este valor conforme necessário */
+        /* Espaçamento entre o ícone e o texto no menu */
+        [data-testid="stSidebarNavLink"] span:first-child {
+            margin-right: 10px; 
         }
 
         </style>

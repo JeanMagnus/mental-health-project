@@ -1,16 +1,17 @@
+# Arquivo: pages/Perfis_de_Profissionais.py
 
 import streamlit as st
 import pandas as pd
 import plotly.express as px
 from utils import load_data
-from sklearn.preprocessing import OneHotEncoder, StandardScaler, MinMaxScaler # ADICIONADO MinMaxScaler
+from sklearn.preprocessing import OneHotEncoder, StandardScaler, MinMaxScaler
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.cluster import KMeans
 import numpy as np
 
 st.set_page_config(layout="wide")
-st.title("🧠 Descoberta de Perfis de Profissionais (Clustering)")
+st.title("Descoberta de Perfis de Profissionais (Clustering)")
 st.markdown("""
 Esta página usa **Aprendizagem Não Supervisionada (K-Means)** para descobrir grupos naturais (clusters) de profissionais com características semelhantes. O objetivo é identificar "personas" com base em seu ambiente de trabalho e atitudes em relação à saúde mental.
 """)
@@ -43,10 +44,33 @@ preprocessor = ColumnTransformer(
     ])
 
 
-st.sidebar.header("Configurações do Modelo")
-k = st.sidebar.slider("Selecione o número de perfis (clusters) a encontrar:", min_value=2, max_value=8, value=4, step=1)
 
-if st.sidebar.button("Analisar Perfis"):
+
+st.divider() 
+
+with st.container(border=True): 
+    st.subheader("Configurações da Análise")
+    col1, col2 = st.columns([3, 1]) 
+
+    with col1:
+        k = st.slider(
+            "Selecione o número de perfis (clusters) a encontrar:", 
+            min_value=2, 
+            max_value=8, 
+            value=4, 
+            step=1,
+            help="Escolha quantos grupos distintos você quer que a IA identifique."
+        )
+
+    with col2:
+       
+        st.write("")
+        st.write("")
+        run_button = st.button("Analisar Perfis", use_container_width=True, type="primary")
+
+
+
+if run_button:
     
     kmeans_pipeline = Pipeline(steps=[
         ('preprocessor', preprocessor),
@@ -87,11 +111,7 @@ if st.sidebar.button("Analisar Perfis"):
     st.subheader("Visualização Comparativa dos Perfis (Gráfico de Radar)")
 
     profile_features = profile_summary.drop('Perfil', axis=1)
-    
-
     scaler = MinMaxScaler()
-    
-
     profile_scaled = pd.DataFrame(scaler.fit_transform(profile_features), columns=profile_features.columns)
     profile_scaled['Perfil'] = profile_summary['Perfil'] 
 
@@ -114,4 +134,4 @@ if st.sidebar.button("Analisar Perfis"):
     """)
 
 else:
-    st.info("Ajuste o número de perfis na barra lateral e clique em 'Analisar Perfis' para iniciar a descoberta.")
+    st.info("Ajuste as configurações acima e clique em 'Analisar Perfis' para iniciar a descoberta.")
